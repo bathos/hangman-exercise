@@ -1,0 +1,27 @@
+{
+  "name": "shoobx-hangman",
+  "version": "0.0.1",
+  "description": "hangman game",
+  "main": "src/index.js",
+  "scripts": {
+    "install": "napa",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bathos/shoobx-hangman.git"
+  },
+  "author": "Darien Maillet Valentine",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bathos/shoobx-hangman/issues"
+  },
+  "homepage": "https://github.com/bathos/shoobx-hangman#readme",
+  "napa": {
+    "google-10000-english": "git+https://github.com/first20hours/google-10000-english#c39523c"
+  },
+  "dependencies": {
+    "express": "4.14.1",
+    "napa": "2.3.0"
+  }
+}
