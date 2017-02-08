@@ -42,8 +42,8 @@ have not transpiled or provided polyfills for.
 I wasn’t sure how far I’m meant to take this. Some parts of the spec could be
 read to imply real data persistence or even tracking users instead of sessions,
 but this, and "must scale to millions of users" seemed kind of extreme for an
-interview exercise. Instead I’ll try to describe how I might have approach these
-things given more time and resources:
+interview exercise. Instead I’ll try to describe how I might have approached
+these things given more time and resources:
 
 - as it is, the app could handle a few thousands concurrent users
 - to scale beyond that, initially I might use the native `cluster` module and

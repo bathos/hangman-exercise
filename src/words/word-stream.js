@@ -5,7 +5,7 @@ const { Writable } = require('stream');
 // already only words under 10 characters long, but to keep the game from being
 // overly difficult (i.e., it needs to be okay to make a bad guess or two),
 // we’ll filter it further to only include words with a maximum of six unique
-// characters, permitting at least four bad guesses per game.
+// characters, which ‘leaves room’ for more bad guesses per game.
 
 const LF = 0x0A;
 const MAX_UNIQUE_CHARACTERS = 6;
