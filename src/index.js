@@ -6,3 +6,5 @@ const PORT = 8888;
 
 app.use(staticMW());
 app.listen(PORT);
+
+process.stdout.write(`Listening on port ${ PORT }.\n`);
