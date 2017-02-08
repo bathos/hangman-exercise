@@ -2,7 +2,8 @@
 
 ## To Run
 
-The expected runtime is node 7+. The client app will be accessible at port 8888.
+The expected runtime is node 7+. You can pull it down and `npm i && node .` The
+client app will be accessible at port 8888.
 
 ## Implementation
 
