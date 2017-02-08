@@ -134,3 +134,33 @@ body {
   padding: 20px;
   text-align: center;
 }
+
+.word .unguessed {
+  color: #6A4C63;
+  display: inline-block;
+}
+
+.word .unguessed:nth-child(1) {
+  transform: rotate(29deg);
+}
+.word .unguessed:nth-child(2) {
+  transform: rotate(-8deg);
+}
+.word .unguessed:nth-child(3) {
+  transform: rotate(11deg);
+}
+.word .unguessed:nth-child(4) {
+  transform: rotate(40deg);
+}
+.word .unguessed:nth-child(5) {
+  transform: rotate(-20deg);
+}
+.word .unguessed:nth-child(6) {
+  transform: rotate(-32deg);
+}
+.word .unguessed:nth-child(7) {
+  transform: rotate(10deg);
+}
+.word .unguessed:nth-child(8) {
+  transform: rotate(-16deg);
+}

@@ -150,6 +150,7 @@ module.exports = () => {
         lost:                this.lost,
         remainingGuessCount: this.remainingGuessCount,
         won:                 this.won,
+        word:                this.won || this.lost ? this.word : undefined,
         wordMask:            this.wordMask
       };
     }

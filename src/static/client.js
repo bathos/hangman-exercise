@@ -203,14 +203,36 @@ const getRenderUsedChars = parent => {
 };
 
 const getRenderWord = parent => {
-  const word = document.createElement('div');
+  const wordMatch = document.createElement('div');
 
-  word.classList.add('word');
+  wordMatch.classList.add('word');
 
-  parent.appendChild(word);
+  parent.appendChild(wordMatch);
 
-  return ({ game: { wordMask } }) => {
-    word.textContent = wordMask;
+  return ({ game: { word, wordMask } }) => {
+    if (word) {
+      Array
+        .from(wordMatch.childNodes)
+        .forEach(node => wordMatch.removeChild(node));
+
+      Array
+        .from(word)
+        .map(char => {
+          const span = document.createElement('span');
+
+          span.textContent = char;
+
+          if (!wordMask.includes(char)) {
+            span.classList.add('unguessed');
+          }
+
+          return span;
+        }).forEach(span => {
+          wordMatch.appendChild(span);
+        });
+    } else {
+      wordMatch.textContent = wordMask;
+    }
   };
 };
 
