@@ -1,3 +1,8 @@
+// Please forgive the lack of modularization — to keep this simple I avoided
+// having any build process.
+
+// RENDERING ///////////////////////////////////////////////////////////////////
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const createLine = (x1, x2, y1, y2) => {
@@ -78,20 +83,23 @@ const getRenderHangman = parent => {
   sky.appendChild(hangman);
   parent.appendChild(sky);
 
-  return ({ guesses, won }) => {
+  return ({ game: { badGuessCount, won } }) => {
     if (won) {
+      sky.classList.add('dawn');
       return;
     }
 
-    parts.slice(0, guesses.length).forEach(part => {
+    sky.classList.remove('dawn');
+
+    parts.slice(0, badGuessCount).forEach(part => {
       part.style.opacity = 1;
     });
 
-    parts.slice(guesses.length).forEach(part => {
+    parts.slice(badGuessCount).forEach(part => {
       part.style.opacity = 0;
     });
 
-    if (guesses.length === parts.length) {
+    if (badGuessCount === parts.length) {
       hangmanBody.classList.add('hanged');
       sky.classList.add('twilight');
     } else {
@@ -109,54 +117,240 @@ const getRenderInstructions = parent => {
   instructions.textContent = `
     Guess a character by typing it.
     Press ESCAPE to get a new game.
-    You have ten tries total to complete the word.
+    Make fewer than ten bad guesses or a man will die.
   `;
 
   parent.appendChild(instructions);
 
-  return noop;
+  return () => undefined;
 };
 
-const getRenderStatus = parent => {
-  const status    = document.createElement('div');
-  const remaining = document.createTextNode('');
-  const failMsg   = document.createElement('span');
+const getRenderPlayStats = parent => {
+  const playStats = document.createElement('div');
 
-  status.classList.add('status');
+  playStats.classList.add('play-stats');
 
-  failMsg.style.visibility = 'hidden';
-  failMsg.textContent = ' Press ESC to try again.';
+  parent.appendChild(playStats);
 
-  status.appendChild(document.createTextNode('You have '));
-  status.appendChild(remaining);
-  status.appendChild(document.createTextNode('remaining guesses.'));
-  status.appendChild(failMsg);
-
-  parent.appendChild(status);
-
-  return ({ remainingGuessCount }) => {
-    remaining.textContent = remainingGuessCount;
-    failMsg.style         = remainingGuessCount ? 'hidden' : 'visible';
+  return ({ gamesPlayed, gamesWon }) => {
+    playStats.textContent = `Won ${ gamesWon } of ${ gamesPlayed }.`;
   };
 };
 
+const getRenderStatus = parent => {
+  const status    = document.createElement('p');
+  const prefix    = document.createElement('span');
+  const remaining = document.createTextNode('');
+  const suffix    = document.createElement('span');
+  const endMsg    = document.createElement('span');
+
+  status.classList.add('status');
+
+  prefix.textContent = 'You have ';
+  suffix.textContent = ' remaining guesses.';
+
+  endMsg.style.display = 'none';
+  endMsg.textContent = ' Press ESC to try again.';
+
+  status.appendChild(prefix);
+  status.appendChild(remaining);
+  status.appendChild(suffix);
+  status.appendChild(endMsg);
+
+  parent.appendChild(status);
+
+  return ({ game: { remainingGuessCount, won } }) => {
+    if (won) {
+      prefix.style.display  = 'none';
+      suffix.style.display  = 'none';
+      remaining.textContent = 'You won! ';
+      endMsg.style.display  = 'inline';
+    } else {
+      prefix.style.display    = '';
+      remaining.textContent   = remainingGuessCount;
+      suffix.style.display    = '';
+      endMsg.style.display    = remainingGuessCount ? 'none' : 'inline';
+    }
+  };
+};
+
+const getRenderUsedChars = parent => {
+  const guessList = document.createElement('ul');
+
+  guessList.classList.add('guesses');
+
+  const charsEntries = Array.from('abcdefghijklmnopqrstuvwxyz').map(char => {
+    const li = document.createElement('li');
+
+    li.textContent = char.toUpperCase();
+
+    guessList.appendChild(li);
+
+    return [ char, li ];
+  });
+
+  parent.appendChild(guessList);
+
+  return ({ game: { guesses } }) => {
+    for (const [ char, li ] of charsEntries) {
+      if (guesses.includes(char)) {
+        li.classList.add('guessed');
+      } else {
+        li.classList.remove('guessed');
+      }
+    }
+  };
+};
+
+const getRenderWord = parent => {
+  const word = document.createElement('div');
+
+  word.classList.add('word');
+
+  parent.appendChild(word);
+
+  return ({ game: { wordMask } }) => {
+    word.textContent = wordMask;
+  };
+};
+
+// INIT ////////////////////////////////////////////////////////////////////////
+
 const init = () => {
+
+  // API requests
+
+  const baseOpts = {
+    credentials: 'same-origin',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    method: 'GET'
+  };
+
+  const getOpts = (method, body) => Object.assign({}, baseOpts, {
+    body: body && JSON.stringify(body),
+    method
+  });
+
+  const getGame = id =>
+    fetch(`/games/${ id }`, getOpts('GET'));
+
+  const getNewGame = () =>
+    fetch('/games', getOpts('POST')).then(res => {
+      if (!res.error) {
+        state.gamesPlayed++;
+      }
+
+      return res;
+    });
+
+  const getStatus = () =>
+    fetch('/status', getOpts('GET'));
+
+  const updateGame = game =>
+    fetch(`/games/${ game.id }`, getOpts('PATCH', game));
+
+  // Events
+
+  const KEY_ESCAPE = 0x1B;
+  const KEY_A      = 0x41;
+  const KEY_Z      = 0x5A;
+
+  const isKeyCombo = event =>
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey;
+
+  document.addEventListener('keydown', event => {
+    if (isKeyCombo(event) || state.pending) {
+      return;
+    }
+
+    const { keyCode } = event;
+
+    if (keyCode === KEY_ESCAPE) {
+      getNewGame().then(handleRes).then(render);
+      return;
+    }
+
+    if (state.game.won || state.game.lost) {
+      return;
+    }
+
+    if (keyCode >= KEY_A && keyCode <= KEY_Z) {
+      const char = String.fromCodePoint(keyCode).toLowerCase();
+
+      if (state.game.guesses.includes(char)) {
+        return;
+      }
+
+      state.game.guesses.push(char);
+
+      state.pending = true;
+
+      updateGame(state.game)
+        .then(handleRes)
+        .then(() => {
+          if (state.game.won) {
+            state.gamesWon++;
+          }
+        })
+        .then(render);;
+    }
+  });
+
+  // Render
+
   const fragment = document.createDocumentFragment();
 
   const renderFns = [
     getRenderHangman,
+    getRenderWord,
     getRenderStatus,
+    getRenderUsedChars,
+    getRenderPlayStats,
     getRenderInstructions
   ].map(getRender => getRender(fragment));
 
-  const render = game =>
-    renderFns.forEach(render => render(game));
+  const render = () =>
+    renderFns.forEach(render => render(state));
 
   document.body.appendChild(fragment);
 
-  window.render = render;
-};
+  // State
 
-const noop = () => undefined;
+  const state = {
+    game: {},
+    pending: true
+  };
+
+  const handleRes = res => res.json()
+    .then(game => {
+      if (game.error) {
+        throw new Error(game.error);
+      }
+
+      state.game = game;
+    })
+    .catch(err => alert(`Oh poop: ${ err.message }`))
+    .then(() => state.pending = false);
+
+  getStatus()
+    .then(res => res.json())
+    .then(status => {
+      if (status.error) {
+        throw new Error(status.error);
+      }
+
+      state.gamesWon = status.gamesWon;
+      state.gamesPlayed = status.gamesPlayed;
+
+      return status.activeGameID ? getGame(status.activeGameID) : getNewGame();
+    })
+    .then(handleRes)
+    .then(render);
+};
 
 init();

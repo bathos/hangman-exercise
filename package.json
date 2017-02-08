@@ -21,7 +21,12 @@
     "google-10000-english": "git+https://github.com/first20hours/google-10000-english#c39523c"
   },
   "dependencies": {
+    "body-parser": "1.16.0",
     "express": "4.14.1",
+    "express-session": "1.15.0",
     "napa": "2.3.0"
+  },
+  "devDependencies": {
+    "uuid": "3.0.1"
   }
 }
